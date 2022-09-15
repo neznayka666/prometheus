@@ -1,0 +1,8 @@
+# Default values for my Helm Chart
+
+namespace: unitest
+image_prometheus: prom/prometheus
+image_blackbox: prom/blackbox-exporter
+image_graffana: grafana/grafana:latest
+graffana_secret: unitest123
+replica: 1

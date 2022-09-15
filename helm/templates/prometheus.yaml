@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+spec:
+  replicas: {{ .Values.replica }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      containers:
+      - name: prometheus
+        image: {{ .Values.image_prometheus }}
+        args:
+          - '--storage.tsdb.retention=6h'
+          - '--storage.tsdb.path=/prometheus'
+          - '--config.file=/etc/prometheus/prometheus.yml'
+        ports:
+        - name: web
+          containerPort: 9090
+        volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus
+      - name: blackbox
+        image: {{ .Values.image_blackbox }}
+        ports:
+        - name: blackbox
+          containerPort: 9115
+      restartPolicy: Always
+
+
+
+
+      volumes:
+      - name: prometheus-config-volume
+        configMap:
+            defaultMode: 420
+            name: prometheus-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: prometheus-service
+    namespace: {{ .Values.namespace }}
+    annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port:   '9090'
+
+spec:
+    selector:
+        app: prometheus
+    type: NodePort
+    ports:
+    - port: 8080
+      targetPort: 9090 
+      nodePort: 30000

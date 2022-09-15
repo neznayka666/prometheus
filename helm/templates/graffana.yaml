@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replica }}
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      name: grafana
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: {{ .Values.image_graffana }}
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: {{ .Values.graffana_secret }}
+        ports:
+        - name: grafana
+          containerPort: 3000
+        volumeMounts:h
+          - mountPath: /etc/grafana/provisioning/datasources
+            name: grafana-datasources
+            readOnly: false
+      volumes:
+        - name: grafana-datasources
+          configMap:
+              defaultMode: 420
+              name: grafana-datasources
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace }}
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/port:   '3000'
+spec:
+  selector: 
+    app: grafana
+  type: NodePort  
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 32000
